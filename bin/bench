@@ -62,12 +62,18 @@ class Schema(object):
         for dir_name in ['bin', 'sbin', 'etc', 'lib', 'include']:
             s_dir = os.path.join(self.env['prefix'], dir_name)
             t_dir = os.path.join(self.env['diy_prefix'], dir_name)
-            if os.path.exists(s_dir) and os.path.exists(t_dir):
+            if os.path.exists(s_dir):
+                if not os.path.exists(t_dir):
+                    os.makedirs(t_dir)
+
                 for filename in os.listdir(s_dir):
-                    os.symlink(
-                        os.path.join(s_dir, filename),
-                        os.path.join(t_dir, filename)
-                    )
+                    source = os.path.join(s_dir, filename)
+                    target = os.path.join(t_dir, filename)
+
+                    if os.path.exists(target):
+                        os.unlink(target)
+
+                    os.symlink(source, target)
 
     def call(self, command):
         subprocess.call(command.format(**self.env), shell=True)
