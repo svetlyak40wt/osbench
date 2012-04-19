@@ -1,6 +1,9 @@
 .*.swp
 *.pyc
 /bin/*
+!/bin/bench
+!/bin/bench-bootstrap
+!/bin/virtualenv.py
 /etc/
 /include/
 /lib/
