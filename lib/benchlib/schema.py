@@ -18,11 +18,11 @@ class Schema(object):
         )
 
     def _get_source(self):
-        subprocess.call('wget "{0}"'.format(self.url), shell=True)
+        self.call('wget "{0}"'.format(self.url))
         files = os.listdir('.')
         assert len(files) == 1
 
-        subprocess.call('tar -jxvf "{0}"'.format(files[0]), shell=True)
+        self.call('tar -jxvf "{0}"'.format(files[0]))
         os.unlink(files[0])
 
         dirs = os.listdir('.')
@@ -44,21 +44,21 @@ class Schema(object):
         root = tempfile.mkdtemp(prefix='diy-')
         try:
             os.chdir(root)
-            shell = os.environ['SHELL']
-            subprocess.call(shell)
 
             self._get_source()
 
             if interactive:
                 shell = os.environ['SHELL']
-                subprocess.call(shell, shell=True)
+                self.call('git init')
+                self.call('git add -A')
+                self.call(shell)
             else:
                 self.install()
 
             self._symlink()
 
         finally:
-            subprocess.call('rm -fr "{0}"'.format(root), shell=True)
+            self.call('rm -fr "{0}"'.format(root))
 
     def _symlink(self):
         for dir_name in ['bin', 'sbin', 'etc', 'lib', 'include']:
