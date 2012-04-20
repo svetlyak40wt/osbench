@@ -30,6 +30,15 @@ class Schema(object):
 
         os.chdir(dirs[0])
 
+        patch_names = sorted(name for name in dir(self) if name.startswith('patch_'))
+
+        for name in patch_names:
+            filename = name.replace('_', '-') + '.diff'
+            with open(filename, 'w') as f:
+                f.write(getattr(self, name))
+            self.call('patch -p1 < ' + filename)
+
+
     def _install_deps(self):
         if self.deps:
             print 'installing dependencies'

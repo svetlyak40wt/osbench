@@ -26,9 +26,9 @@ def install(
         code = compile(open(filename).read(), filename, 'exec')
 
         locals = {}
-        module = eval(code, globals(), locals)
+        eval(code, globals(), locals)
 
-        schemas = [schema for schema in locals.values() if issubclass(schema, Schema)]
+        schemas = [schema for schema in locals.values() if isinstance(schema, type) and issubclass(schema, Schema)]
         assert len(schemas) == 1
 
         env = dict(
