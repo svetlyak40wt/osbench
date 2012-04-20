@@ -14,7 +14,10 @@ from opster import command, dispatch
 from schema import Schema
 
 @command()
-def install(schema_name):
+def install(
+        schema_name,
+        interactive=('i', False, 'drop into the shell when source will be ready')
+    ):
     diy_prefix = os.path.dirname(os.path.dirname(__file__))
     schemas = os.path.join(diy_prefix, 'schemas')
 
@@ -33,7 +36,7 @@ def install(schema_name):
             schema=schema_name,
         )
         schema = schemas[0](env)
-        schema._install()
+        schema._install(interactive=interactive)
 
 
 if __name__ == '__main__':
