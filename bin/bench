@@ -18,8 +18,8 @@ def install(
         schema_name,
         interactive=('i', False, 'drop into the shell when source will be ready')
     ):
-    diy_prefix = os.path.dirname(os.path.dirname(__file__))
-    schemas = os.path.join(diy_prefix, 'schemas')
+    osbench_root = os.path.dirname(os.path.dirname(__file__))
+    schemas = os.path.join(osbench_root, 'schemas')
 
     if sys.path[0] != schemas:
         filename = os.path.join(schemas, schema_name + '.py')
@@ -32,8 +32,9 @@ def install(
         assert len(schemas) == 1
 
         env = dict(
-            diy_prefix=diy_prefix,
+            osbench_root=osbench_root,
             schema=schema_name,
+            schema_filename=filename,
         )
         schema = schemas[0](env)
         schema._install(interactive=interactive)

@@ -12,7 +12,7 @@ class Schema(object):
         self.env = env.copy()
         version = re.search(r'(\d+\.\d+\.\d+)', self.url).group(1)
         self.env['prefix'] = os.path.join(
-            env['diy_prefix'],
+            env['osbench_root'],
             'workbench',
             '%s-%s' % (env['schema'], version)
         )
@@ -35,9 +35,24 @@ class Schema(object):
         for name in patch_names:
             filename = name.replace('_', '-') + '.diff'
             with open(filename, 'w') as f:
-                f.write(getattr(self, name))
+                f.write(self._get_patch(name))
             self.call('patch -p1 < ' + filename)
 
+    def _get_patch(self, name):
+        data = getattr(self, name)
+
+        if len(data[:200].split('\n')) == 1:
+            # then probably this is a file or URL
+            patch_filename = os.path.join(
+                os.path.dirname(self.env['schema_filename']),
+                data
+            )
+            if os.path.exists(patch_filename):
+                data = open(patch_filename).read()
+
+        data = data.replace('OSBENCH_ROOT', self.env['osbench_root'])
+        data = data.replace('OSBENCH_PREFIX', self.env['prefix'])
+        return data
 
     def _install_deps(self):
         if self.deps:
@@ -72,7 +87,7 @@ class Schema(object):
     def _symlink(self):
         for dir_name in ['bin', 'sbin', 'etc', 'lib', 'include']:
             s_dir = os.path.join(self.env['prefix'], dir_name)
-            t_dir = os.path.join(self.env['diy_prefix'], dir_name)
+            t_dir = os.path.join(self.env['osbench_root'], dir_name)
             if os.path.exists(s_dir):
                 if not os.path.exists(t_dir):
                     os.makedirs(t_dir)
