@@ -7,6 +7,7 @@ class Schema(object):
     url = None
     homepage = None
     deps = []
+    dirs_to_symlink = ['bin', 'sbin', 'etc', 'lib', 'include']
 
     def __init__(self, env):
         self.env = env.copy()
@@ -85,21 +86,32 @@ class Schema(object):
             self.call('rm -fr "{0}"'.format(root))
 
     def _symlink(self):
-        for dir_name in ['bin', 'sbin', 'etc', 'lib', 'include']:
+        for dir_name in self.dirs_to_symlink:
             s_dir = os.path.join(self.env['prefix'], dir_name)
             t_dir = os.path.join(self.env['osbench_root'], dir_name)
+
+            if not os.path.exists(t_dir):
+                os.makedirs(t_dir)
+
             if os.path.exists(s_dir):
-                if not os.path.exists(t_dir):
-                    os.makedirs(t_dir)
+                for root, dirs, files in os.walk(s_dir):
+                    # making root, relative
+                    root = os.path.relpath(root, s_dir)
 
-                for filename in os.listdir(s_dir):
-                    source = os.path.join(s_dir, filename)
-                    target = os.path.join(t_dir, filename)
+                    for dir_name in dirs:
+                        full_dir_name = os.path.join(
+                            t_dir, root, dir_name
+                        )
+                        if not os.path.exists(full_dir_name):
+                            os.makedirs(full_dir_name)
 
-                    if os.path.exists(target):
-                        os.unlink(target)
 
-                    os.symlink(source, target)
+                    for filename in files:
+                        source = os.path.join(s_dir, root, filename)
+                        target = os.path.join(t_dir, root, filename)
+
+                        if not os.path.exists(target):
+                            os.symlink(source, target)
 
     def call(self, command):
         subprocess.call(command.format(**self.env), shell=True)
