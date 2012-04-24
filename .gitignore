@@ -10,3 +10,5 @@
 !/lib/benchlib/
 /sbin/
 /workbench/
+/man/
+/src/

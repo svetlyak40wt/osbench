@@ -2,23 +2,36 @@ import re
 import subprocess
 import tempfile
 import os
+import shutil
+
 
 class Schema(object):
     url = None
+    version = None
     homepage = None
     deps = []
     dirs_to_symlink = ['bin', 'sbin', 'etc', 'lib', 'include']
 
     def __init__(self, env):
         self.env = env.copy()
-        version = re.search(r'(\d+\.\d+\.\d+)', self.url).group(1)
+
+        if self.version is None:
+            if self.url is not None:
+                self.version = re.search(r'(\d+\.\d+\.\d+)', self.url).group(1)
+            else:
+                # TODO output warning about missing URL and version
+                self.version = 'dev'
+
         self.env['prefix'] = os.path.join(
             env['osbench_root'],
             'workbench',
-            '%s-%s' % (env['schema'], version)
+            '%s-%s' % (env['schema'], self.version)
         )
 
     def _get_source(self):
+        if not self.url:
+            return
+
         self.call('wget "{0}"'.format(self.url))
         files = os.listdir('.')
         assert len(files) == 1
@@ -80,12 +93,23 @@ class Schema(object):
             else:
                 self.install()
 
-            self._symlink()
+            self._link()
 
         finally:
             self.call('rm -fr "{0}"'.format(root))
 
-    def _symlink(self):
+    def _uninstall(self):
+        """Uninstalls the schema from the prefix.
+
+        It removes symlinks and deletes installed files from workbenches.
+        """
+        self._unlink()
+        self._delete()
+
+    def _delete(self):
+        shutil.rmtree(self.env['prefix'])
+
+    def _link(self):
         for dir_name in self.dirs_to_symlink:
             s_dir = os.path.join(self.env['prefix'], dir_name)
             t_dir = os.path.join(self.env['osbench_root'], dir_name)
@@ -113,7 +137,54 @@ class Schema(object):
                         if not os.path.exists(target):
                             os.symlink(source, target)
 
+    def _unlink(self):
+        for dir_name in self.dirs_to_symlink:
+            s_dir = os.path.join(self.env['prefix'], dir_name)
+            t_dir = os.path.join(self.env['osbench_root'], dir_name)
+
+            if os.path.exists(s_dir):
+                # TODO check if topdown=False needed
+                for root, dirs, files in os.walk(s_dir):
+                    # making root, relative
+                    root = os.path.relpath(root, s_dir)
+
+                    for filename in files:
+                        target = os.path.join(t_dir, root, filename)
+
+                        if os.path.exists(target):
+                            os.unlink(target)
+
+                    for dir_name in dirs:
+                        full_dir_name = os.path.join(
+                            t_dir, root, dir_name
+                        )
+                        try:
+                            os.rmdir(full_dir_name)
+                        except IOError:
+                            pass
+
+
+    # Utilities
     def call(self, command):
         subprocess.call(command.format(**self.env), shell=True)
 
+    def make_dirs(self, *dirs):
+        """Makes dirs inside the prefix.
+
+        Use this command inside your `install` method.
+        """
+        for d in dirs:
+            fullname = os.path.join(self.env['prefix'], d)
+            if not os.path.exists(fullname):
+                os.makedirs(fullname)
+
+    def create_file(self, filename, content):
+        """Creates a file inside 'prefix'.
+
+        Use this command inside your `install` method.
+        Note: Source directory should exists.
+        Warning: if there is some file already, it will be overwritten.
+        """
+        with open(os.path.join(self.env['prefix'], filename), 'w') as f:
+            f.write(content)
 
