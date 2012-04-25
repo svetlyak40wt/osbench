@@ -1,14 +1,22 @@
 import os
 import sys
+import logging
 
 from opster import command
 from benchlib.schema import Schema
 
+__all__ = ['install', 'uninstall', 'Bench']
+
 class Bench(object):
-    def __init__(self, osbench_root=None):
+    def __init__(self, osbench_root=None, loglevel='info'):
         if osbench_root is None:
             osbench_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.osbench_root = osbench_root
+
+        logging.basicConfig(
+            format='%(message)s',
+            level=getattr(logging, loglevel.upper()),
+        )
 
     def _load_schema(self, schema_name):
         schema = None
@@ -47,16 +55,15 @@ class Bench(object):
 
 @command()
 def install(
+        bench,
         schema_name,
-        interactive=('i', False, 'drop into the shell when source will be ready')
+        interactive=('i', False, 'drop into the shell when source will be ready'),
     ):
-    bench = Bench()
     bench.install(schema_name, interactive=interactive)
 
 
 @command()
-def uninstall(schema_name):
-    bench = Bench()
+def uninstall(bench, schema_name):
     bench.uninstall(schema_name)
 
 

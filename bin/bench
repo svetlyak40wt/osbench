@@ -11,7 +11,29 @@ sys.path.insert(
 )
 
 from opster import dispatch
+from benchlib.commands import *
+
 
 if __name__ == '__main__':
-    dispatch()
+    globaloptions = [
+        ('v', 'verbose', False, 'enable additional output'),
+        ('q', 'quiet', False, 'suppress output'),
+    ]
+
+    def middleware(func):
+        def inner(*args, **kwargs):
+            if func.__name__ == 'help_inner':
+                return func(*args, **kwargs)
+
+            loglevel = 'info'
+            if kwargs.pop('verbose', None):
+                loglevel = 'debug'
+            if kwargs.pop('quiet', None):
+                loglevel = 'error'
+
+            bench = Bench(loglevel=loglevel)
+            return func(bench, *args, **kwargs)
+        return inner
+
+    dispatch(globaloptions=globaloptions, middleware=middleware)
 

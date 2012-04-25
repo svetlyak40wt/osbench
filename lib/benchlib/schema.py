@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import os
 import shutil
+import logging
 
 
 class Schema(object):
@@ -31,6 +32,8 @@ class Schema(object):
     def _get_source(self):
         if not self.url:
             return
+
+        logging.info('Getting source code')
 
         self.call('wget "{0}"'.format(self.url))
         files = os.listdir('.')
@@ -70,12 +73,12 @@ class Schema(object):
 
     def _install_deps(self):
         if self.deps:
-            print 'installing dependencies'
+            logging.info('Installing dependencies')
             for dep in self.deps:
                 self.call('sudo apt-get install %s' % dep)
 
     def _install(self, interactive=False):
-        print 'base install'
+        logging.info('Installing "{schema}"'.format(**self.env))
 
         self._install_deps()
 
@@ -86,11 +89,13 @@ class Schema(object):
             self._get_source()
 
             if interactive:
+                logging.info('Entering into the interactive mode')
                 shell = os.environ['SHELL']
                 self.call('git init')
                 self.call('git add -A')
                 self.call(shell)
             else:
+                logging.info('Running schema\'s install method')
                 self.install()
 
             self._link()
@@ -103,6 +108,7 @@ class Schema(object):
 
         It removes symlinks and deletes installed files from workbenches.
         """
+        logging.info('Uninstalling "{schema}"'.format(**self.env))
         self._unlink()
         self._delete()
 
@@ -110,6 +116,7 @@ class Schema(object):
         shutil.rmtree(self.env['prefix'])
 
     def _link(self):
+        logging.info('Making symlinks')
         for dir_name in self.dirs_to_symlink:
             s_dir = os.path.join(self.env['prefix'], dir_name)
             t_dir = os.path.join(self.env['osbench_root'], dir_name)
@@ -138,6 +145,7 @@ class Schema(object):
                             os.symlink(source, target)
 
     def _unlink(self):
+        logging.info('Removing symlinks')
         for dir_name in self.dirs_to_symlink:
             s_dir = os.path.join(self.env['prefix'], dir_name)
             t_dir = os.path.join(self.env['osbench_root'], dir_name)
@@ -166,7 +174,18 @@ class Schema(object):
 
     # Utilities
     def call(self, command):
-        subprocess.call(command.format(**self.env), shell=True)
+        command = command.format(**self.env)
+        logging.info('Running "{0}"'.format(command))
+
+        proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=True,
+        )
+
+        for line in proc.stdout:
+            logging.debug(line.strip('\n'))
 
     def make_dirs(self, *dirs):
         """Makes dirs inside the prefix.
