@@ -11,7 +11,9 @@ sys.path.insert(
 )
 
 from opster import dispatch
+from logbook import StreamHandler, NullHandler
 from benchlib.commands import *
+from benchlib.utils import IndentFormatter
 
 
 if __name__ == '__main__':
@@ -31,7 +33,13 @@ if __name__ == '__main__':
             if kwargs.pop('quiet', None):
                 loglevel = 'error'
 
-            bench = Bench(loglevel=loglevel)
+            NullHandler().push_application()
+
+            handler = StreamHandler(sys.stdout, level=loglevel.upper())
+            handler.push_application()
+            handler.formatter = IndentFormatter(u'{record.message}')
+
+            bench = Bench()
             return func(bench, *args, **kwargs)
         return inner
 

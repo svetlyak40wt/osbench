@@ -3,7 +3,9 @@ import subprocess
 import tempfile
 import os
 import shutil
-import logging
+
+from logbook import Logger
+from .utils import higher_log_indent
 
 
 class Schema(object):
@@ -15,6 +17,7 @@ class Schema(object):
 
     def __init__(self, env):
         self.env = env.copy()
+        self.log = Logger()
 
         if self.version is None:
             if self.url is not None:
@@ -33,27 +36,28 @@ class Schema(object):
         if not self.url:
             return
 
-        logging.info('Getting source code')
+        self.log.info('Getting source code')
 
-        self.call('wget "{0}"'.format(self.url))
-        files = os.listdir('.')
-        assert len(files) == 1
+        with higher_log_indent():
+            self.call('wget "{0}"'.format(self.url))
+            files = os.listdir('.')
+            assert len(files) == 1
 
-        self.call('tar -jxvf "{0}"'.format(files[0]))
-        os.unlink(files[0])
+            self.call('tar -jxvf "{0}"'.format(files[0]))
+            os.unlink(files[0])
 
-        dirs = os.listdir('.')
-        assert len(dirs) == 1
+            dirs = os.listdir('.')
+            assert len(dirs) == 1
 
-        os.chdir(dirs[0])
+            os.chdir(dirs[0])
 
-        patch_names = sorted(name for name in dir(self) if name.startswith('patch_'))
+            patch_names = sorted(name for name in dir(self) if name.startswith('patch_'))
 
-        for name in patch_names:
-            filename = name.replace('_', '-') + '.diff'
-            with open(filename, 'w') as f:
-                f.write(self._get_patch(name))
-            self.call('patch -p1 < ' + filename)
+            for name in patch_names:
+                filename = name.replace('_', '-') + '.diff'
+                with open(filename, 'w') as f:
+                    f.write(self._get_patch(name))
+                self.call('patch -p1 < ' + filename)
 
     def _get_patch(self, name):
         data = getattr(self, name)
@@ -73,119 +77,132 @@ class Schema(object):
 
     def _install_deps(self):
         if self.deps:
-            logging.info('Installing dependencies')
-            for dep in self.deps:
-                self.call('sudo apt-get install %s' % dep)
+            self.log.info('Installing dependencies')
+
+            with higher_log_indent():
+                for dep in self.deps:
+                    self.call('sudo apt-get install %s' % dep)
 
     def _install(self, interactive=False):
-        logging.info('Installing "{schema}"'.format(**self.env))
+        self.log.info('Installing "{schema}"'.format(**self.env))
 
-        self._install_deps()
+        with higher_log_indent():
+            self._install_deps()
 
-        root = tempfile.mkdtemp(prefix='diy-')
-        try:
-            os.chdir(root)
+            root = tempfile.mkdtemp(prefix='diy-')
+            try:
+                os.chdir(root)
 
-            self._get_source()
+                self._get_source()
 
-            if interactive:
-                logging.info('Entering into the interactive mode')
-                shell = os.environ['SHELL']
-                self.call('git init')
-                self.call('git add -A')
-                self.call(shell)
-            else:
-                logging.info('Running schema\'s install method')
-                self.install()
+                if interactive:
+                    self.log.info('Entering into the interactive mode')
+                    with higher_log_indent():
+                        shell = os.environ['SHELL']
+                        self.call('git init')
+                        self.call('git add -A')
+                        self.call(shell)
+                else:
+                    self.log.info('Running schema\'s install method')
+                    with higher_log_indent():
+                        self.install()
 
-            self._link()
+                self._link()
 
-        finally:
-            self.call('rm -fr "{0}"'.format(root))
+            finally:
+                self.call('rm -fr "{0}"'.format(root))
 
     def _uninstall(self):
         """Uninstalls the schema from the prefix.
 
         It removes symlinks and deletes installed files from workbenches.
         """
-        logging.info('Uninstalling "{schema}"'.format(**self.env))
-        self._unlink()
-        self._delete()
+        self.log.info('Uninstalling "{schema}"'.format(**self.env))
+        with higher_log_indent():
+            self._unlink()
+            self._delete()
 
     def _delete(self):
         shutil.rmtree(self.env['prefix'])
 
     def _link(self):
-        logging.info('Making symlinks')
-        for dir_name in self.dirs_to_symlink:
-            s_dir = os.path.join(self.env['prefix'], dir_name)
-            t_dir = os.path.join(self.env['osbench_root'], dir_name)
+        self.log.info('Making symlinks')
 
-            if not os.path.exists(t_dir):
-                os.makedirs(t_dir)
+        with higher_log_indent():
+            for dir_name in self.dirs_to_symlink:
+                s_dir = os.path.join(self.env['prefix'], dir_name)
+                t_dir = os.path.join(self.env['osbench_root'], dir_name)
 
-            if os.path.exists(s_dir):
-                for root, dirs, files in os.walk(s_dir):
-                    # making root, relative
-                    root = os.path.relpath(root, s_dir)
+                if not os.path.exists(t_dir):
+                    self.log.debug('Creating directory "{0}"', t_dir)
+                    os.makedirs(t_dir)
 
-                    for dir_name in dirs:
-                        full_dir_name = os.path.join(
-                            t_dir, root, dir_name
-                        )
-                        if not os.path.exists(full_dir_name):
-                            os.makedirs(full_dir_name)
+                if os.path.exists(s_dir):
+                    for root, dirs, files in os.walk(s_dir):
+                        # making root, relative
+                        root = os.path.relpath(root, s_dir)
+
+                        for dir_name in dirs:
+                            full_dir_name = os.path.join(
+                                t_dir, root, dir_name
+                            )
+                            if not os.path.exists(full_dir_name):
+                                self.log.debug('Creating directory "{0}"', full_dir_name)
+                                os.makedirs(full_dir_name)
 
 
-                    for filename in files:
-                        source = os.path.join(s_dir, root, filename)
-                        target = os.path.join(t_dir, root, filename)
+                        for filename in files:
+                            source = os.path.join(s_dir, root, filename)
+                            target = os.path.join(t_dir, root, filename)
 
-                        if not os.path.exists(target):
-                            os.symlink(source, target)
+                            if not os.path.exists(target):
+                                self.log.debug('Creating symlink from "{1}" to {0}', source, target)
+                                os.symlink(source, target)
 
     def _unlink(self):
-        logging.info('Removing symlinks')
-        for dir_name in self.dirs_to_symlink:
-            s_dir = os.path.join(self.env['prefix'], dir_name)
-            t_dir = os.path.join(self.env['osbench_root'], dir_name)
+        self.log.info('Removing symlinks')
+        with higher_log_indent():
+            for dir_name in self.dirs_to_symlink:
+                s_dir = os.path.join(self.env['prefix'], dir_name)
+                t_dir = os.path.join(self.env['osbench_root'], dir_name)
 
-            if os.path.exists(s_dir):
-                # TODO check if topdown=False needed
-                for root, dirs, files in os.walk(s_dir):
-                    # making root, relative
-                    root = os.path.relpath(root, s_dir)
+                if os.path.exists(s_dir):
+                    # TODO check if topdown=False needed
+                    for root, dirs, files in os.walk(s_dir):
+                        # making root, relative
+                        root = os.path.relpath(root, s_dir)
 
-                    for filename in files:
-                        target = os.path.join(t_dir, root, filename)
+                        for filename in files:
+                            target = os.path.join(t_dir, root, filename)
 
-                        if os.path.exists(target):
-                            os.unlink(target)
+                            if os.path.exists(target):
+                                os.unlink(target)
 
-                    for dir_name in dirs:
-                        full_dir_name = os.path.join(
-                            t_dir, root, dir_name
-                        )
-                        try:
-                            os.rmdir(full_dir_name)
-                        except IOError:
-                            pass
+                        for dir_name in dirs:
+                            full_dir_name = os.path.join(
+                                t_dir, root, dir_name
+                            )
+                            try:
+                                os.rmdir(full_dir_name)
+                            except IOError:
+                                pass
 
 
     # Utilities
     def call(self, command):
         command = command.format(**self.env)
-        logging.info('Running "{0}"'.format(command))
+        self.log.info('Running "{0}"'.format(command))
 
-        proc = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=True,
-        )
+        with higher_log_indent():
+            proc = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=True,
+            )
 
-        for line in proc.stdout:
-            logging.debug(line.strip('\n'))
+            for line in proc.stdout:
+                self.log.debug(line.decode('utf-8').strip(u'\n'))
 
     def make_dirs(self, *dirs):
         """Makes dirs inside the prefix.

@@ -1,6 +1,5 @@
 import os
 import sys
-import logging
 
 from opster import command
 from benchlib.schema import Schema
@@ -8,15 +7,10 @@ from benchlib.schema import Schema
 __all__ = ['install', 'uninstall', 'Bench']
 
 class Bench(object):
-    def __init__(self, osbench_root=None, loglevel='info'):
+    def __init__(self, osbench_root=None):
         if osbench_root is None:
             osbench_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.osbench_root = osbench_root
-
-        logging.basicConfig(
-            format='%(message)s',
-            level=getattr(logging, loglevel.upper()),
-        )
 
     def _load_schema(self, schema_name):
         schema = None
