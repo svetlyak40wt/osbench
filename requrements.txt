@@ -1,1 +1,2 @@
 opster==3.5
+Logbook==0.3
