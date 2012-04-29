@@ -4,7 +4,7 @@ class Test(Schema):
 
     def install(self):
         self.make_dirs('bin')
-        self.create_file(
+        self.create_file_with_content(
             'bin/hello-world.sh',
             'echo "Hello World!"'
         )

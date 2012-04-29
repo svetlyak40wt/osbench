@@ -6,32 +6,49 @@ import shutil
 
 from logbook import Logger
 from .utils import higher_log_indent
+from .exceptions import BadExitCode
 
+
+def _figureout_version(url):
+    # TODO output warning about missing URL and version
+    patterns = (
+        r'(\d+\.\d+\.\d+)',
+        r'(\d+\.[a-z0-9]+)',
+    )
+    for pattern in patterns:
+        try:
+            return re.search(pattern, url).group(1)
+        except:
+            pass
+
+    return 'dev'
 
 class Schema(object):
     url = None
     version = None
     homepage = None
     deps = []
-    dirs_to_symlink = ['bin', 'sbin', 'etc', 'lib', 'include']
+    dirs_to_symlink = ['bin', 'sbin', 'etc', 'lib', 'include', 'var']
 
     def __init__(self, env):
         self.env = env.copy()
         self.log = Logger()
 
         if self.version is None:
-            if self.url is not None:
-                self.version = re.search(r'(\d+\.\d+\.\d+)', self.url).group(1)
-            else:
-                # TODO output warning about missing URL and version
-                self.version = 'dev'
+            self.version = _figureout_version(self.url)
 
         self.env['prefix'] = os.path.join(
             env['osbench_root'],
             'workbench',
-            '%s-%s' % (env['schema'], self.version)
+            env['schema'],
+            self.version
         )
 
+    # Methods to override
+    def install(self):
+        pass
+
+    # Internals
     def _get_source(self):
         if not self.url:
             return
@@ -70,10 +87,14 @@ class Schema(object):
             )
             if os.path.exists(patch_filename):
                 data = open(patch_filename).read()
-
-        data = data.replace('OSBENCH_ROOT', self.env['osbench_root'])
-        data = data.replace('OSBENCH_PREFIX', self.env['prefix'])
+        
+        data = self._substitute_vars(data)
         return data
+
+    def _substitute_vars(self, text):
+        return text \
+            .replace('OSBENCH_ROOT', self.env['osbench_root']) \
+            .replace('OSBENCH_PREFIX', self.env['prefix'])
 
     def _install_deps(self):
         if self.deps:
@@ -187,7 +208,6 @@ class Schema(object):
                             except IOError:
                                 pass
 
-
     # Utilities
     def call(self, command):
         command = command.format(**self.env)
@@ -201,8 +221,17 @@ class Schema(object):
                 shell=True,
             )
 
+            full_output = []
             for line in proc.stdout:
-                self.log.debug(line.decode('utf-8').strip(u'\n'))
+                line = line.decode('utf-8').strip(u'\n')
+                full_output.append(line)
+                self.log.debug(line)
+
+            return_code = proc.wait()
+            if return_code != 0:
+                for line in full_output:
+                    self.log.error(line)
+                raise BadExitCode('subprogram exit with non zero exit code')
 
     def make_dirs(self, *dirs):
         """Makes dirs inside the prefix.
@@ -212,15 +241,59 @@ class Schema(object):
         for d in dirs:
             fullname = os.path.join(self.env['prefix'], d)
             if not os.path.exists(fullname):
+                self.log.info('Creating directory "{0}".'.format(fullname))
                 os.makedirs(fullname)
 
-    def create_file(self, filename, content):
+    def create_file_with_content(self, filename, content, mode=None):
         """Creates a file inside 'prefix'.
 
         Use this command inside your `install` method.
-        Note: Source directory should exists.
+        Note: Source and target directory should exists.
         Warning: if there is some file already, it will be overwritten.
         """
-        with open(os.path.join(self.env['prefix'], filename), 'w') as f:
-            f.write(content)
+        filename = os.path.join(self.env['prefix'], filename)
+
+        self.log.info('Creating file "{0}"'.format(filename))
+
+        with open(filename, 'w') as f:
+            f.write(self._substitute_vars(content))
+
+        if mode is not None:
+            self.call('chmod "{0}" "{1}"'.format(mode, filename))
+
+    def copy_file(self, from_filename, to_filename, mode=None):
+        """Copies file, to a directory inside 'prefix'.
+
+        from_filename could be relative to the current directory, or 
+        use variables to be expanded to self.env.
+
+        Use this command inside your `install` method.
+        Note: Source and target directory should exists.
+        Warning: if there is some file already, it will be overwritten.
+        """
+        with open(from_filename.format(**self.env), 'r') as f:
+            self.create_file_with_content(to_filename, f.read(), mode=mode)
+
+
+class PythonSchema(Schema):
+    def _install(self, interactive=False):
+        self.log.info('Installing "{schema}"'.format(**self.env))
+
+        with higher_log_indent():
+            self._install_deps()
+
+            self.log.info('Creating virtual env')
+            with higher_log_indent():
+                self.call('python "{osbench_root}/lib/benchlib/virtualenv.py" "{prefix}"')
+
+            self.log.info('Installing package {0}'.format(self.url))
+            with higher_log_indent():
+                self.call('"{{prefix}}"/bin/pip install "{0}"'.format(self.url))
+
+
+            self.log.info('Running schema\'s install method')
+            with higher_log_indent():
+                self.install()
+
+            self._link()
 

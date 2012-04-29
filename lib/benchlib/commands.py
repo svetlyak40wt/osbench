@@ -2,7 +2,8 @@ import os
 import sys
 
 from opster import command
-from benchlib.schema import Schema
+from benchlib.schema import Schema, PythonSchema
+from benchlib.exceptions import BadExitCode
 
 __all__ = ['install', 'uninstall', 'Bench']
 
@@ -15,10 +16,10 @@ class Bench(object):
     def _load_schema(self, schema_name):
         schema = None
 
-        schemas = os.path.join(self.osbench_root, 'schemas')
+        schemas_dir = os.path.join(self.osbench_root, 'schemas')
 
-        if sys.path[0] != schemas:
-            filename = os.path.join(schemas, schema_name + '.py')
+        if sys.path[0] != schemas_dir:
+            filename = os.path.join(schemas_dir, schema_name + '.py')
             code = compile(open(filename).read(), filename, 'exec')
 
             locals = {}
@@ -31,6 +32,7 @@ class Bench(object):
                 osbench_root=self.osbench_root,
                 schema=schema_name,
                 schema_filename=filename,
+                schema_dir=schemas_dir,
             )
             schema = schemas[0](env)
 
@@ -53,11 +55,17 @@ def install(
         schema_name,
         interactive=('i', False, 'drop into the shell when source will be ready'),
     ):
-    bench.install(schema_name, interactive=interactive)
+    try:
+        bench.install(schema_name, interactive=interactive)
+    except BadExitCode:
+        return 1
 
 
 @command()
 def uninstall(bench, schema_name):
-    bench.uninstall(schema_name)
+    try:
+        bench.uninstall(schema_name)
+    except BadExitCode:
+        return 1
 
 

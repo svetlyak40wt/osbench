@@ -1,0 +1,2 @@
+class BadExitCode(RuntimeError):
+    pass
