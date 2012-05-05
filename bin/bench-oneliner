@@ -30,3 +30,7 @@ echo 'Creating virtual env'
 bin/bench-bootstrap
 
 echo 'Done'
+
+echo "Now, please add $INSTALLDIR/bin into your PATH variable."
+echo "Usually, it should be defined in ~/.bashrc script, but this"
+echo "depends on your system."
