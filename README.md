@@ -7,6 +7,14 @@ in a language for a human being.
 
 Right now, it is no more than a prototype.
 
+Installation
+------------
+
+Oneliner: `bash -c "$(curl -s https://raw.github.com/svetlyak40wt/osbench/master/bin/bench-oneliner)"`
+
+Or [clone it] anywhere, add `bin` directory to the `PATH` environment variable
+and run `bench-bootstrap`.
+
 Plans
 -----
 

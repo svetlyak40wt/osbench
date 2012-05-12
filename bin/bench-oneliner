@@ -1,0 +1,36 @@
+#!/bin/bash -e
+
+REPOSITORY=svetlyak40wt/osbench
+DEFAULT_INSTALLDIR=/opt/osbench
+
+read -p "Where do you want to install osbench (default: $DEFAULT_INSTALLDIR)? " INSTALLDIR
+
+if [ -z "$INSTALLDIR" ]
+then
+    INSTALLDIR=${DEFAULT_INSTALLDIR}
+fi
+
+echo "Installing into $INSTALLDIR"
+
+if [ -e "$INSTALLDIR" ]; then
+    if [ -e "$INSTALLDIR/.git" ]; then
+        echo "Seems, that you already installed osbench into the $INSTALLDIR, using git checkout."
+        exit 1
+    fi
+else
+    mkdir -p "$INSTALLDIR"
+fi
+
+cd "$INSTALLDIR"
+
+echo "Downloading tarball from $REPOSITORY"
+curl -skSfL https://github.com/$REPOSITORY/tarball/master | tar xz -m --strip 1
+
+echo 'Creating virtual env'
+bin/bench-bootstrap
+
+echo 'Done'
+
+echo "Now, please add $INSTALLDIR/bin into your PATH variable."
+echo "Usually, it should be defined in ~/.bashrc script, but this"
+echo "depends on your system."

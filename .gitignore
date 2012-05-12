@@ -2,6 +2,7 @@
 *.pyc
 /bin/*
 !/bin/bench
+!/bin/bench-oneliner
 !/bin/bench-bootstrap
 !/bin/virtualenv.py
 /etc/
