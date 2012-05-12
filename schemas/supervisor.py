@@ -3,7 +3,7 @@ class Supervisor(PythonSchema):
     homepage = 'http://supervisord.org/'
 
     def install(self):
-        self.make_dirs(
+        self.makedirs(
             'etc/init.d',
             'etc/supervisor.d',
             'var/run',

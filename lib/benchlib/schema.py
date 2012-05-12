@@ -60,8 +60,16 @@ class Schema(object):
             files = os.listdir('.')
             assert len(files) == 1
 
-            self.call('tar -jxvf "{0}"'.format(files[0]))
-            os.unlink(files[0])
+            filename = files[0]
+            if filename.endswith('.gz'):
+                tar_options = '-zxvf'
+            elif filename.endswith('.bz2'):
+                tar_options = '-jxvf'
+            else:
+                raise RuntimeError('Unknown archive format.')
+
+            self.call('tar {0} "{1}"'.format(tar_options, filename))
+            os.unlink(filename)
 
             dirs = os.listdir('.')
             assert len(dirs) == 1
@@ -102,7 +110,8 @@ class Schema(object):
 
             with higher_log_indent():
                 for dep in self.deps:
-                    self.call('sudo apt-get install %s' % dep)
+                    if dep.startswith('system.'):
+                        self.call('sudo apt-get --yes install %s' % dep[7:])
 
     def _install(self, interactive=False):
         self.log.info('Installing "{schema}"'.format(**self.env))
@@ -111,6 +120,10 @@ class Schema(object):
             self._install_deps()
 
             root = tempfile.mkdtemp(prefix='diy-')
+
+            if not os.path.exists(self.env['prefix']):
+                os.makedirs(self.env['prefix'])
+
             try:
                 os.chdir(root)
 
@@ -122,7 +135,7 @@ class Schema(object):
                         shell = os.environ['SHELL']
                         self.call('git init')
                         self.call('git add -A')
-                        self.call(shell)
+                        self.call(shell, pass_output=True)
                 else:
                     self.log.info('Running schema\'s install method')
                     with higher_log_indent():
@@ -188,8 +201,7 @@ class Schema(object):
                 t_dir = os.path.join(self.env['osbench_root'], dir_name)
 
                 if os.path.exists(s_dir):
-                    # TODO check if topdown=False needed
-                    for root, dirs, files in os.walk(s_dir):
+                    for root, dirs, files in os.walk(s_dir, topdown=False):
                         # making root, relative
                         root = os.path.relpath(root, s_dir)
 
@@ -205,27 +217,35 @@ class Schema(object):
                             )
                             try:
                                 os.rmdir(full_dir_name)
-                            except IOError:
+                            except OSError:
                                 pass
 
     # Utilities
-    def call(self, command):
+    def call(self, command, pass_output=False):
         command = command.format(**self.env)
         self.log.info('Running "{0}"'.format(command))
 
         with higher_log_indent():
-            proc = subprocess.Popen(
-                command,
+            options = dict(
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 shell=True,
             )
+            if pass_output:
+                del options['stdout']
+                del options['stderr']
+
+            proc = subprocess.Popen(
+                command,
+                **options
+            )
 
             full_output = []
-            for line in proc.stdout:
-                line = line.decode('utf-8').strip(u'\n')
-                full_output.append(line)
-                self.log.debug(line)
+            if not pass_output:
+                for line in proc.stdout:
+                    line = line.decode('utf-8').strip(u'\n')
+                    full_output.append(line)
+                    self.log.debug(line)
 
             return_code = proc.wait()
             if return_code != 0:
@@ -233,7 +253,7 @@ class Schema(object):
                     self.log.error(line)
                 raise BadExitCode('subprogram exit with non zero exit code')
 
-    def make_dirs(self, *dirs):
+    def makedirs(self, *dirs):
         """Makes dirs inside the prefix.
 
         Use this command inside your `install` method.

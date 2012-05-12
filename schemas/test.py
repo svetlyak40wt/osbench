@@ -3,7 +3,7 @@ class Test(Schema):
     homepage = 'http://example.com/'
 
     def install(self):
-        self.make_dirs('bin')
+        self.makedirs('bin')
         self.create_file_with_content(
             'bin/hello-world.sh',
             'echo "Hello World!"'

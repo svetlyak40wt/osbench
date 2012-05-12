@@ -1,0 +1,33 @@
+diff --git a/runserver.py b/runserver.py
+index e6b9872..4af615c 100755
+--- a/runserver.py
++++ b/runserver.py
+@@ -2,6 +2,7 @@
+ 
+ import CGIHTTPServer
+ import BaseHTTPServer
++import os
+ from optparse import OptionParser
+ 
+ 
+@@ -11,6 +12,7 @@ class Handler(CGIHTTPServer.CGIHTTPRequestHandler):
+ PORT = 8888
+ 
+ def main():
++    os.chdir('OSBENCH_PREFIX')
+     parser = OptionParser()
+     opts, args = parser.parse_args()
+     if args:
+diff --git a/cgi-bin/collection.modified.cgi b/cgi-bin/collection.modified.cgi
+index e238aaa..a8afd12 100755
+--- a/cgi-bin/collection.modified.cgi
++++ b/cgi-bin/collection.modified.cgi
+@@ -27,7 +27,7 @@ use URI::Escape    ('uri_escape');
+ use RRDs           ();
+ use Data::Dumper   ();
+ use JSON ('to_json');
+-our $Config   = "/etc/collectd/collection.conf";
++our $Config   = "OSBENCH_ROOT/etc/collectd/collection.conf";
+ our @DataDirs = ();
+ our $LibDir;
+ our $make_transparent = 1;
