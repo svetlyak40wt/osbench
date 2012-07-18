@@ -61,9 +61,12 @@ class Schema(object):
             assert len(files) == 1
 
             filename = files[0]
-            if filename.endswith('.gz'):
+            # remove url params if they was added to the filename
+            stripped_filename = filename.split('?', 1)[0]
+
+            if stripped_filename.endswith('.gz'):
                 tar_options = '-zxvf'
-            elif filename.endswith('.bz2'):
+            elif stripped_filename.endswith('.bz2'):
                 tar_options = '-jxvf'
             else:
                 raise RuntimeError('Unknown archive format.')
