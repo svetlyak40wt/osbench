@@ -6,4 +6,4 @@ if [ ! -e "$BASE/bin/pip" ]; then
     python "$BASE/bin/virtualenv.py" .
 fi
 
-pip install -r requrements.txt
+bin/pip install -r requrements.txt
