@@ -43,6 +43,7 @@ class Schema(object):
             env['schema'],
             self.version
         )
+        self.env['version'] = self.version
 
     # Methods to override
     def install(self):
@@ -64,7 +65,8 @@ class Schema(object):
             # remove url params if they was added to the filename
             stripped_filename = filename.split('?', 1)[0]
 
-            if stripped_filename.endswith('.gz'):
+            if stripped_filename.endswith('.gz') or \
+               stripped_filename.endswith('.tgz'):
                 tar_options = '-zxvf'
             elif stripped_filename.endswith('.bz2'):
                 tar_options = '-jxvf'
