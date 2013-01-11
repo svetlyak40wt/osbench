@@ -43,6 +43,7 @@ class Schema(object):
             env['schema'],
             self.version
         )
+        self.env['version'] = self.version
 
     # Methods to override
     def install(self):
@@ -61,9 +62,13 @@ class Schema(object):
             assert len(files) == 1
 
             filename = files[0]
-            if filename.endswith('.gz'):
+            # remove url params if they was added to the filename
+            stripped_filename = filename.split('?', 1)[0]
+
+            if stripped_filename.endswith('.gz') or \
+               stripped_filename.endswith('.tgz'):
                 tar_options = '-zxvf'
-            elif filename.endswith('.bz2'):
+            elif stripped_filename.endswith('.bz2'):
                 tar_options = '-jxvf'
             else:
                 raise RuntimeError('Unknown archive format.')
@@ -99,10 +104,17 @@ class Schema(object):
         data = self._substitute_vars(data)
         return data
 
+    def _get_environment_vars(self):
+        """ Returns dict with variables to set in shell and to replace in the templates.
+        """
+        return dict(
+            OSBENCH_ROOT=self.env['osbench_root'],
+            OSBENCH_PREFIX=self.env['prefix'],
+        )
+
     def _substitute_vars(self, text):
-        return text \
-            .replace('OSBENCH_ROOT', self.env['osbench_root']) \
-            .replace('OSBENCH_PREFIX', self.env['prefix'])
+        for name, value in self._get_environment_vars().items():
+            text = text.replace(name, value)
 
     def _install_deps(self):
         if self.deps:
@@ -135,6 +147,8 @@ class Schema(object):
                         shell = os.environ['SHELL']
                         self.call('git init')
                         self.call('git add -A')
+                        for name, value in self._get_environment_vars().items():
+                            os.environ[name] = value
                         self.call(shell, pass_output=True)
                 else:
                     self.log.info('Running schema\'s install method')
