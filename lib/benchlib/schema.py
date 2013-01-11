@@ -115,6 +115,7 @@ class Schema(object):
     def _substitute_vars(self, text):
         for name, value in self._get_environment_vars().items():
             text = text.replace(name, value)
+        return text
 
     def _install_deps(self):
         if self.deps:
