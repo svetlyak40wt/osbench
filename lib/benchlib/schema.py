@@ -23,6 +23,7 @@ def _figureout_version(url):
 
     return 'dev'
 
+
 class Schema(object):
     url = None
     version = None
@@ -174,13 +175,16 @@ class Schema(object):
     def _delete(self):
         shutil.rmtree(self.env['prefix'])
 
+    def _join_path(self, *args):
+        return os.path.normpath(os.path.join(*args))
+
     def _link(self):
         self.log.info('Making symlinks')
 
         with higher_log_indent():
             for dir_name in self.dirs_to_symlink:
-                s_dir = os.path.join(self.env['prefix'], dir_name)
-                t_dir = os.path.join(self.env['osbench_root'], dir_name)
+                s_dir = self._join_path(self.env['prefix'], dir_name)
+                t_dir = self._join_path(self.env['osbench_root'], dir_name)
 
                 if not os.path.exists(t_dir):
                     self.log.debug('Creating directory "{0}"', t_dir)
@@ -192,7 +196,7 @@ class Schema(object):
                         root = os.path.relpath(root, s_dir)
 
                         for dir_name in dirs:
-                            full_dir_name = os.path.join(
+                            full_dir_name = self._join_path(
                                 t_dir, root, dir_name
                             )
                             if not os.path.exists(full_dir_name):
@@ -201,19 +205,30 @@ class Schema(object):
 
 
                         for filename in files:
-                            source = os.path.join(s_dir, root, filename)
-                            target = os.path.join(t_dir, root, filename)
+                            source = self._join_path(s_dir, root, filename)
+                            target = self._join_path(t_dir, root, filename)
 
                             if not os.path.exists(target):
-                                self.log.debug('Creating symlink from "{1}" to {0}', source, target)
+                                self.log.debug('Creating symlink from "{source}" to {target}',
+                                        source=source, target=target)
                                 os.symlink(source, target)
 
     def _unlink(self):
         self.log.info('Removing symlinks')
+        for ftype, name in self.get_files_to_unlink():
+            if ftype == 'file':
+                os.unlink(name)
+            else:
+                try:
+                    os.rmdir(name)
+                except OSError:
+                    pass
+
+    def get_files_to_unlink(self):
         with higher_log_indent():
             for dir_name in self.dirs_to_symlink:
-                s_dir = os.path.join(self.env['prefix'], dir_name)
-                t_dir = os.path.join(self.env['osbench_root'], dir_name)
+                s_dir = self._join_path(self.env['prefix'], dir_name)
+                t_dir = self._join_path(self.env['osbench_root'], dir_name)
 
                 if os.path.exists(s_dir):
                     for root, dirs, files in os.walk(s_dir, topdown=False):
@@ -221,19 +236,18 @@ class Schema(object):
                         root = os.path.relpath(root, s_dir)
 
                         for filename in files:
-                            target = os.path.join(t_dir, root, filename)
+                            source = self._join_path(s_dir, root, filename)
+                            target = self._join_path(t_dir, root, filename)
 
-                            if os.path.exists(target):
-                                os.unlink(target)
+                            if os.path.islink(target) and \
+                                os.path.realpath(target) == source:
+                                yield ('file', target)
 
                         for dir_name in dirs:
-                            full_dir_name = os.path.join(
+                            full_dir_name = self._join_path(
                                 t_dir, root, dir_name
                             )
-                            try:
-                                os.rmdir(full_dir_name)
-                            except OSError:
-                                pass
+                            yield ('dir', full_dir_name)
 
     # Utilities
     def call(self, command, pass_output=False):
