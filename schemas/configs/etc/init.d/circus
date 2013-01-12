@@ -19,10 +19,10 @@
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="Description of the service"
-NAME=circus
-DAEMON=OSBENCH_ROOT/bin/circusd
-DAEMON_ARGS="OSBENCH_ROOT/etc/circus.conf"
+NAME=circusd
 PIDFILE=OSBENCH_ROOT/var/run/$NAME.pid
+DAEMON=OSBENCH_ROOT/bin/circusd
+DAEMON_ARGS="--daemon  --log-level DEBUG --log-output OSBENCH_ROOT/var/log/$NAME.log --pidfile $PIDFILE OSBENCH_ROOT/etc/circus.conf"
 SCRIPTNAME=OSBENCH_ROOT/etc/init.d/$NAME
 
 # Exit if the package is not installed
