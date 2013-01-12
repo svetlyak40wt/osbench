@@ -38,6 +38,12 @@ class Schema(object):
         if self.version is None:
             self.version = _figureout_version(self.url)
 
+        if self.url.startswith('git://'):
+            self.deps.append('git')
+            self.retriver = self.git
+        else:
+            self.retriver = self.wget
+
         self.env['prefix'] = os.path.join(
             env['osbench_root'],
             'workbench',
@@ -58,29 +64,7 @@ class Schema(object):
         self.log.info('Getting source code')
 
         with higher_log_indent():
-            self.call('wget "{0}"'.format(self.url))
-            files = os.listdir('.')
-            assert len(files) == 1
-
-            filename = files[0]
-            # remove url params if they was added to the filename
-            stripped_filename = filename.split('?', 1)[0]
-
-            if stripped_filename.endswith('.gz') or \
-               stripped_filename.endswith('.tgz'):
-                tar_options = '-zxvf'
-            elif stripped_filename.endswith('.bz2'):
-                tar_options = '-jxvf'
-            else:
-                raise RuntimeError('Unknown archive format.')
-
-            self.call('tar {0} "{1}"'.format(tar_options, filename))
-            os.unlink(filename)
-
-            dirs = os.listdir('.')
-            assert len(dirs) == 1
-
-            os.chdir(dirs[0])
+            self.retriver(self.url)
 
             patch_names = sorted(name for name in dir(self) if name.startswith('patch_'))
 
@@ -117,6 +101,38 @@ class Schema(object):
         for name, value in self._get_environment_vars().items():
             text = text.replace(name, value)
         return text
+
+
+    def wget(self, url):
+        self.call('wget "{0}"'.format(self.url))
+        files = os.listdir('.')
+        assert len(files) == 1
+
+        filename = files[0]
+        # remove url params if they was added to the filename
+        stripped_filename = filename.split('?', 1)[0]
+
+        if stripped_filename.endswith('.gz') or \
+           stripped_filename.endswith('.tgz'):
+            tar_options = '-zxvf'
+        elif stripped_filename.endswith('.bz2'):
+            tar_options = '-jxvf'
+        else:
+            raise RuntimeError('Unknown archive format.')
+
+        self.call('tar {0} "{1}"'.format(tar_options, filename))
+        os.unlink(filename)
+
+        dirs = os.listdir('.')
+        assert len(dirs) == 1
+
+        os.chdir(dirs[0])
+
+    def git(self, url):
+        self.call("git clone '{0}'".format(url))
+        dirs = os.listdir('.')
+        assert len(dirs) == 1
+        os.chdir(dirs[0])
 
     def _install_deps(self):
         if self.deps:
