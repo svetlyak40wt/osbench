@@ -15,3 +15,5 @@
 /src/
 /var/
 /.noseids
+local
+*~
