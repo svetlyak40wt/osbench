@@ -4,7 +4,7 @@ class Git(Schema):
     deps = ['system.libncurses5-dev']
 
     def install(self):
-        self.call('./configure --prefix={prefix}')
+        self.call('./configure --prefix={prefix} '
+                  '--with-xpm=no --with-gif=no --with-tiff=no')
         self.call('make')
         self.call('make install')
-
