@@ -56,6 +56,11 @@ class Schema(object):
     def install(self):
         pass
 
+    def is_installed(self):
+        """Right now we'll simple check if program
+        was built and installed into workbench."""
+        return os.path.exists(self.env['prefix'])
+
     # Internals
     def _get_source(self):
         if not self.url:

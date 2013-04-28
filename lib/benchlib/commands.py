@@ -52,15 +52,18 @@ class Bench(object):
 
         raise RuntimeError('Schema {0} not found'.format(schema_name_or_cls))
 
-    def install(self, schema, interactive=False):
+    def get_schema(self, schema):
         if not isinstance(schema, Schema):
             schema = self.load_schema(schema)
+        return schema
+
+    def install(self, schema, interactive=False):
+        schema = self.get_schema(schema)
         schema._install(interactive=interactive)
         return schema
 
     def uninstall(self, schema, interactive=False):
-        if not isinstance(schema, Schema):
-            schema = self.load_schema(schema)
+        schema = self.get_schema(schema)
         schema._uninstall()
         return schema
 
@@ -84,4 +87,13 @@ def uninstall(bench, schema_name):
     except BadExitCode:
         return 1
 
+
+@command()
+def show(
+        bench,
+        schema_name,
+    ):
+    schema = bench.get_schema(schema_name)
+    print 'Name:', schema_name
+    print 'Installed:', schema.is_installed()
 
