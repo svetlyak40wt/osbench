@@ -30,3 +30,7 @@ Development
     bin/pip install nose
     bin/nosetests lib/benchlib
 
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/svetlyak40wt/osbench/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
