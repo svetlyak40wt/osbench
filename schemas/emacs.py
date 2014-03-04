@@ -1,5 +1,5 @@
 class Emacs(Schema):
-    url = 'http://ftp.gnu.org/pub/gnu/emacs/emacs-24.2.tar.gz'
+    url = 'http://ftp.gnu.org/pub/gnu/emacs/emacs-24.3.tar.gz'
     homepage = 'http://www.gnu.org/software/emacs/'
     deps = ['system.libncurses5-dev', 'system.make']
 
