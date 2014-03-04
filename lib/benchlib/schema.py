@@ -229,10 +229,19 @@ class Schema(object):
                             source = self._join_path(s_dir, root, filename)
                             target = self._join_path(t_dir, root, filename)
 
-                            if not os.path.exists(target):
-                                self.log.debug('Creating symlink from "{source}" to {target}',
-                                        source=source, target=target)
-                                os.symlink(source, target)
+                            if os.path.exists(target):
+                                if os.readlink(target) == source:
+                                    self.log.debug('Symlink {target} already exists', target=target)
+                                    continue
+                                else:
+                                    self.log.warning('Unlinking file {target}, pointing to {source}',
+                                                     target=target, source=source)
+                                    os.unlink(target)
+                                
+                            self.log.debug('Creating symlink from "{source}" to {target}',
+                                           source=source, target=target)
+                            os.symlink(source, target)
+
 
     def _unlink(self):
         self.log.info('Removing symlinks')
