@@ -230,17 +230,22 @@ class Schema(object):
                             target = self._join_path(t_dir, root, filename)
 
                             if os.path.exists(target):
-                                if os.readlink(target) == source:
-                                    self.log.debug('Symlink {target} already exists', target=target)
-                                    continue
+                                if os.path.islink(target):
+                                    if os.readlink(target) == source:
+                                        self.log.debug('Symlink {target} already exists', target=target)
+                                        continue
+                                    else:
+                                        self.log.warning('Unlinking file {target}, pointing to {source}',
+                                                         target=target, source=source)
+                                        os.unlink(target)
                                 else:
-                                    self.log.warning('Unlinking file {target}, pointing to {source}',
-                                                     target=target, source=source)
-                                    os.unlink(target)
-                                
-                            self.log.debug('Creating symlink from "{source}" to {target}',
-                                           source=source, target=target)
-                            os.symlink(source, target)
+                                    self.log.warning('File {target} already exists and it is not a link',
+                                                     target=target)
+
+                            if not os.path.exists(target):
+                                self.log.debug('Creating symlink from "{source}" to {target}',
+                                               source=source, target=target)
+                                os.symlink(source, target)
 
 
     def _unlink(self):
