@@ -1,5 +1,5 @@
 class Circus(PythonSchema):
-    url = 'circus==0.6.0'
+    url = 'circus==0.10.0'
     homepage = 'http://circus.readthedocs.org/'
 
     def install(self):
