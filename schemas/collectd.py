@@ -1,5 +1,5 @@
 class Collectd(Schema):
-    url = 'http://collectd.org/files/collectd-5.1.0.tar.bz2'
+    url = 'http://collectd.org/files/collectd-5.4.1.tar.bz2'
     homepage = 'http://collectd.org/'
     deps = ['system.wget', 'system.bzip2', 'system.librrd-dev']
 
