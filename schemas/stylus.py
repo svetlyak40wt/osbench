@@ -1,4 +1,4 @@
-class Less(Schema):
+class Stylus(Schema):
     version = '0.29.0'
     homepage = 'http://learnboost.github.com/stylus/'
     deps = ['npm']
