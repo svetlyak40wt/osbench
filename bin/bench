@@ -2,6 +2,14 @@
 
 import os
 import sys
+import subprocess
+
+RIGHT_INTERPRETER = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), 'python')
+)
+
+if sys.executable != RIGHT_INTERPRETER:
+    exit(subprocess.check_call([RIGHT_INTERPRETER] + sys.argv))
 
 sys.path.insert(
     0,

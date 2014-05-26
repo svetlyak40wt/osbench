@@ -1,7 +1,7 @@
 class Tmux(Schema):
-    url = 'http://downloads.sourceforge.net/project/tmux/tmux/tmux-1.6/tmux-1.6.tar.gz?r=&ts=1342618675&use_mirror=citylan'
+    url = 'http://downloads.sourceforge.net/project/tmux/tmux/tmux-1.9/tmux-1.9a.tar.gz?use_mirror=citylan'
     homepage = 'http://tmux.sourceforge.net/'
-    deps = ['system.libevent-dev', 'system.libncurses5-dev']
+    deps = ['system.libevent-dev', 'system.libncurses5-dev', 'system.make']
 
     def install(self):
         self.call('./configure --prefix={prefix}')

@@ -1,15 +1,31 @@
 diff --git a/Makefile.am b/Makefile.am
-index 9e3feac..4ff2af4 100644
+index 5267123..53ba78d 100644
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -10,3 +10,5 @@ install-exec-hook:
+@@ -10,6 +10,8 @@ install-exec-hook:
  	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/run
  	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/lib/$(PACKAGE_NAME)
  	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/log
 +	$(mkinstalldirs) $(DESTDIR)$(sysconfdir)/init.d
 +	$(INSTALL) -m 0750 contrib/ubuntu/init.d-collectd $(DESTDIR)$(sysconfdir)/init.d/collectd
+ 
+ maintainer-clean-local:
+ 	-rm -f -r libltdl
+diff --git a/Makefile.in b/Makefile.in
+index cd3cb20..05a6210 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -884,6 +884,8 @@ install-exec-hook:
+ 	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/run
+ 	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/lib/$(PACKAGE_NAME)
+ 	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/log
++	$(mkinstalldirs) $(DESTDIR)$(sysconfdir)/init.d
++	$(INSTALL) -m 0750 contrib/ubuntu/init.d-collectd $(DESTDIR)$(sysconfdir)/init.d/collectd
+ 
+ maintainer-clean-local:
+ 	-rm -f -r libltdl
 diff --git a/contrib/ubuntu/init.d-collectd b/contrib/ubuntu/init.d-collectd
-new file mode 100755
+new file mode 100644
 index 0000000..d8a81e3
 --- /dev/null
 +++ b/contrib/ubuntu/init.d-collectd
@@ -166,16 +182,3 @@ index 0000000..d8a81e3
 +
 +:
 +
-diff --git a/Makefile.in b/Makefile.in
-index b8b682f..a86f924 100644
---- a/Makefile.in
-+++ b/Makefile.in
-@@ -828,6 +828,8 @@ install-exec-hook:
- 	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/run
- 	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/lib/$(PACKAGE_NAME)
- 	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/log
-+	$(mkinstalldirs) $(DESTDIR)$(sysconfdir)/init.d
-+	$(INSTALL) -m 0750 contrib/ubuntu/init.d-collectd $(DESTDIR)$(sysconfdir)/init.d/collectd
- 
- # Tell versions [3.59,3.63) of GNU make to not export all variables.
- # Otherwise a system limit (for SysV at least) may be exceeded.
