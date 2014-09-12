@@ -360,6 +360,10 @@ class Schema(object):
 
 
 class PythonSchema(Schema):
+    def __init__(self, *args, **kwargs):
+        super(PythonSchema, self).__init__(*args, **kwargs)
+        self.deps.append('system.python-virtualenv')
+        
     def _install(self, interactive=False):
         self.log.info('Installing "{schema}"'.format(**self.env))
 
@@ -368,7 +372,7 @@ class PythonSchema(Schema):
 
             self.log.info('Creating virtual env')
             with higher_log_indent():
-                self.call('python "{osbench_root}/lib/benchlib/virtualenv.py" "{prefix}"')
+                self.call('virtualenv "{prefix}"')
 
             self.log.info('Installing package {0}'.format(self.url))
             with higher_log_indent():
