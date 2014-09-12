@@ -90,7 +90,7 @@ class Schema(object):
             )
             if os.path.exists(patch_filename):
                 data = open(patch_filename).read()
-        
+
         data = self._substitute_vars(data)
         return data
 
@@ -106,7 +106,6 @@ class Schema(object):
         for name, value in self._get_environment_vars().items():
             text = text.replace(name, value)
         return text
-
 
     def wget(self, url):
         self.call('wget "{0}"'.format(self.url))
