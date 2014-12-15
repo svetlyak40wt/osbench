@@ -1,9 +1,9 @@
 class Git(Schema):
-    url = 'http://git-core.googlecode.com/files/git-1.7.10.2.tar.gz'
+    url = 'https://www.kernel.org/pub/software/scm/git/git-2.2.0.tar.gz'
     homepage = 'http://git-scm.com/'
+    deps = ['system.tcl8.5', 'system.gettext']
 
     def install(self):
         self.call('./configure --prefix={prefix}')
         self.call('make')
         self.call('make install')
-
