@@ -10,7 +10,7 @@ Right now, it is no more than a prototype.
 Installation
 ------------
 
-Oneliner: `bash -c "$(curl -s https://raw.github.com/svetlyak40wt/osbench/master/bin/bench-oneliner)"`
+Oneliner: `bash -c "$(curl -s https://raw.githubusercontent.com/svetlyak40wt/osbench/master/bin/bench-oneliner)"`
 
 Or [clone it] anywhere, add `bin` directory to the `PATH` environment variable
 and run `bench-bootstrap`.
