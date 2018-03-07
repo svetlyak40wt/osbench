@@ -1,11 +1,14 @@
 OS Bench
 ========
 
-This is a naive attempt to create a package manager for Unix-like systems.
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
+This was a naive attempt to create a package manager for Unix-like systems.
 It is inspired by [Homebrew](https://github.com/mxcl/homebrew), but is written
 in a language for a human being.
 
-Right now, it is no more than a prototype.
+Right now, the project is not maintained. Use [Nix](https://nixos.org/nix/manual/) or [LinuxBrew](http://linuxbrew.sh) instead.
+
 
 Installation
 ------------
